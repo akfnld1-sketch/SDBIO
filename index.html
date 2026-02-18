@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출근부 & 급여계산기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --accent: #f0a500;
+    --accent2: #ff6b35;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --green: #3fb950;
+    --red: #f85149;
+    --blue: #58a6ff;
+    --purple: #bc8cff;
+    --yellow: #e3b341;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+  .header-sub {
+    font-size: 11px;
+    color: var(--text2);
+    letter-spacing: 1px;
+  }
+  .nav-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .nav-btn:hover { background: #ffc235; transform: translateY(-1px); }
+
+  /* PAGES */
+  .page { display: none; animation: fadeIn 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* CALENDAR PAGE */
+  .calendar-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  .month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .month-nav button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .month-nav button:hover { border-color: var(--accent); color: var(--accent); }
+  .month-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .calendar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .cal-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .cal-header div {
+    text-align: center;
+    padding: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text2);
+  }
+  .cal-header div:first-child { color: var(--red); }
+  .cal-header div:last-child { color: var(--blue); }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+  .cal-day {
+    min-height: 80px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .cal-day:nth-child(7n) { border-right: none; }
+  .cal-day:hover { background: var(--surface2); }
+  .cal-day.empty { cursor: default; background: transparent; }
+  .cal-day.empty:hover { background: transparent; }
+  .cal-day.today .day-num {
+    background: var(--accent);
+    color: #000;
+    border-radius: 50%;
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .day-num {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cal-day:nth-child(7n+1) .day-num { color: var(--red); }
+  .cal-day:nth-child(7n) .day-num { color: var(--blue); }
+
+  .day-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 2px;
+  }
+  .badge-출근 { background: #1a3a1a; color: var(--green); }
+  .badge-연차 { background: #2a1a3a; color: var(--purple); }
+  .badge-반차 { background: #1a2a3a; color: var(--blue); }
+  .badge-조퇴 { background: #3a2a1a; color: var(--yellow); }
+  .badge-결근 { background: #3a1a1a; color: var(--red); }
+  .day-time {
+    font-size: 9px;
+    color: var(--text2);
+    line-height: 1.4;
+  }
+  .day-overtime {
+    font-size: 9px;
+    color: var(--accent);
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 420px;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-date {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 20px;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .status-btn {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .status-btn:hover { border-color: var(--accent); }
+  .status-btn.selected { border-color: var(--accent); background: rgba(240,165,0,0.15); color: var(--accent); }
+  .status-btn[data-v="출근"].selected { border-color: var(--green); background: rgba(63,185,80,0.15); color: var(--green); }
+  .status-btn[data-v="연차"].selected { border-color: var(--purple); background: rgba(188,140,255,0.15); color: var(--purple); }
+  .status-btn[data-v="반차"].selected { border-color: var(--blue); background: rgba(88,166,255,0.15); color: var(--blue); }
+  .status-btn[data-v="조퇴"].selected { border-color: var(--yellow); background: rgba(227,179,65,0.15); color: var(--yellow); }
+  .status-btn[data-v="결근"].selected { border-color: var(--red); background: rgba(248,81,73,0.15); color: var(--red); }
+
+  .time-section { margin-bottom: 16px; }
+  .time-label {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 8px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .time-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    width: 100%;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .time-select:focus { border-color: var(--accent); }
+  .time-select option { background: var(--surface2); }
+
+  .overtime-info {
+    background: rgba(240,165,0,0.1);
+    border: 1px solid rgba(240,165,0,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .btn-save {
+    flex: 1;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-save:hover { background: #ffc235; }
+  .btn-cancel {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-cancel:hover { border-color: var(--text2); color: var(--text); }
+  .btn-delete {
+    background: rgba(248,81,73,0.15);
+    color: var(--red);
+    border: 1px solid rgba(248,81,73,0.3);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-delete:hover { background: rgba(248,81,73,0.25); }
+
+  /* SUMMARY STRIP */
+  .summary-strip {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+  }
+  .summary-card .s-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .summary-card .s-label { font-size: 11px; color: var(--text2); font-weight: 500; }
+
+  /* PAYROLL PAGE */
+  .payroll-container { max-width: 700px; margin: 0 auto; padding: 24px 16px; }
+  .payroll-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .payroll-sub { font-size: 13px; color: var(--text2); margin-bottom: 28px; }
+
+  .pay-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .pay-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pay-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+  }
+  .pay-row:last-child { border-bottom: none; }
+  .pay-row-label { font-size: 13px; color: var(--text2); }
+  .pay-row-value { font-size: 14px; font-weight: 600; color: var(--text); }
+  .pay-row-value.highlight { color: var(--accent); }
+  .pay-row-value.deduct { color: var(--red); }
+  .pay-row-value.add { color: var(--green); }
+
+  .pay-input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    gap: 12px;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+  }
+  .pay-input-row:last-child { border-bottom: none; }
+  .pay-input-label { font-size: 13px; color: var(--text2); flex-shrink: 0; }
+  .pay-input-controls { display: flex; align-items: center; gap: 8px; }
+  .pay-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pay-toggle.on { background: rgba(63,185,80,0.15); border-color: var(--green); color: var(--green); }
+
+  .pay-number-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    width: 80px;
+    text-align: right;
+    outline: none;
+  }
+  .pay-number-input:focus { border-color: var(--accent); }
+  .pay-unit { font-size: 12px; color: var(--text2); }
+
+  .total-box {
+    background: linear-gradient(135deg, rgba(240,165,0,0.15), rgba(255,107,53,0.1));
+    border: 1px solid rgba(240,165,0,0.4);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    margin-top: 16px;
+  }
+  .total-label { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 8px; letter-spacing: 1px; }
+  .total-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .total-note { font-size: 11px; color: var(--text2); }
+
+  .overtime-note {
+    background: rgba(88,166,255,0.1);
+    border: 1px solid rgba(88,166,255,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--blue);
+    margin-bottom: 12px;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .cal-day { min-height: 60px; padding: 4px; }
+    .day-num { font-size: 11px; width: 22px; height: 22px; }
+    .day-badge { font-size: 8px; padding: 1px 4px; }
+    .summary-strip { gap: 8px; }
+    .summary-card .s-num { font-size: 22px; }
+    .total-amount { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="
+        width:44px; height:44px;
+        background: linear-gradient(135deg, #0057b8, #00a3e0);
+        border-radius: 10px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:17px; font-weight:900; color:#fff;
+        letter-spacing:-1px; font-family:'Bebas Neue',sans-serif;
+        box-shadow: 0 2px 12px rgba(0,100,200,0.45);
+        flex-shrink:0;
+      ">SD</div>
+      <div>
+        <div style="font-size:16px; font-weight:700; color:var(--text); letter-spacing:0.3px; line-height:1.2;">SD바이오센서</div>
+        <div class="header-sub">출근부 관리 시스템</div>
+      </div>
+    </div>
+  </div>
+  <button class="nav-btn" id="toggleBtn" onclick="togglePage()">💰 급여계산기</button>
+</div>
+
+<!-- CALENDAR PAGE -->
+<div class="page active" id="calPage">
+  <div class="calendar-container">
+    <div class="summary-strip" id="summaryStrip"></div>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <div class="month-title" id="monthTitle"></div>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="calendar">
+      <div class="cal-header">
+        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAYROLL PAGE -->
+<div class="page" id="payPage">
+  <div class="payroll-container">
+    <div class="payroll-title">PAYROLL</div>
+    <div class="payroll-sub">급여계산기 — 세금 제외 실수령액 기준</div>
+
+    <div class="pay-section">
+      <div class="pay-section-title">📊 기본 정보</div>
+      <div class="pay-row">
+        <span class="pay-row-label">통상시급</span>
+        <span class="pay-row-value">11,516원</span>
+      </div>
+      <div class="pay-row">
+        <span class="pay-row-label">기본급</span>
+        <span class="pay-row-value">2,156,880원</span>
+      </div>
+      <div class="pay-row">
+        <span class="pay-row-label">기본 근무 시간/일</span>
+        <span class="pay-row-value">8시간</span>
+      </div>
+    </div>
+
+    <div class="pay-section">
+      <div class="pay-section-title">➕ 추가 수당</div>
+      <div class="pay-input-row">
+        <span class="pay-input-label">자재수당</span>
+        <div class="pay-input-controls">
+          <button class="pay-toggle" id="toggle_jajae" onclick="toggleAllowance('jajae')">OFF</button>
+          <span class="pay-row-value" id="val_jajae" style="color:var(--text2)">+0원</span>
+        </div>
+      </div>
+      <div class="pay-input-row">
+        <span class="pay-input-label">지게차수당</span>
+        <div class="pay-input-controls">
+          <button class="pay-toggle" id="toggle_jigeji" onclick="toggleAllowance('jigeji')">OFF</button>
+          <span class="pay-row-value" id="val_jigeji" style="color:var(--text2)">+0원</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pay-section">
+      <div class="pay-section-title">⏰ 연장근로 수당</div>
+      <div class="overtime-note">연장수당 = 시급(11,516) × 1.5 × 연장시간수</div>
+      <div class="pay-input-row">
+        <span class="pay-input-label">연장근로 시간</span>
+        <div class="pay-input-controls">
+          <input type="number" class="pay-number-input" id="overtimeHours" value="0" min="0" max="100" step="0.5" oninput="calcPayroll()">
+          <span class="pay-unit">시간</span>
+        </div>
+      </div>
+      <div class="pay-row">
+        <span class="pay-row-label">연장수당 합계</span>
+        <span class="pay-row-value add" id="overtimePay">+0원</span>
+      </div>
+    </div>
+
+    <div class="pay-section">
+      <div class="pay-section-title">📅 근태 공제 (이번달 기준)</div>
+      <div id="payAttendanceInfo" class="overtime-note">달력에 입력된 데이터를 자동 반영합니다.</div>
+      <div class="pay-input-row">
+        <span class="pay-input-label">연차 일수</span>
+        <div class="pay-input-controls">
+          <input type="number" class="pay-number-input" id="annualLeave" value="0" min="0" max="30" oninput="calcPayroll()">
+          <span class="pay-unit">일</span>
+          <span class="pay-row-value deduct" id="annualDeduct">-0원</span>
+        </div>
+      </div>
+      <div class="pay-input-row">
+        <span class="pay-input-label">반차 일수</span>
+        <div class="pay-input-controls">
+          <input type="number" class="pay-number-input" id="halfLeave" value="0" min="0" max="30" oninput="calcPayroll()">
+          <span class="pay-unit">일</span>
+          <span class="pay-row-value deduct" id="halfDeduct">-0원</span>
+        </div>
+      </div>
+      <div class="pay-input-row">
+        <span class="pay-input-label">결근 일수</span>
+        <div class="pay-input-controls">
+          <input type="number" class="pay-number-input" id="absentDays" value="0" min="0" max="30" oninput="calcPayroll()">
+          <span class="pay-unit">일</span>
+          <span class="pay-row-value deduct" id="absentDeduct">-0원</span>
+        </div>
+      </div>
+      <div class="pay-input-row">
+        <span class="pay-input-label">조퇴/지각 시간</span>
+        <div class="pay-input-controls">
+          <input type="number" class="pay-number-input" id="earlyHours" value="0" min="0" max="50" step="0.5" oninput="calcPayroll()">
+          <span class="pay-unit">시간</span>
+          <span class="pay-row-value deduct" id="earlyDeduct">-0원</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pay-section">
+      <div class="pay-section-title">📋 급여 내역 요약</div>
+      <div class="pay-row">
+        <span class="pay-row-label">기본급</span>
+        <span class="pay-row-value">2,156,880원</span>
+      </div>
+      <div class="pay-row">
+        <span class="pay-row-label">자재수당</span>
+        <span class="pay-row-value add" id="sum_jajae">+0원</span>
+      </div>
+      <div class="pay-row">
+        <span class="pay-row-label">지게차수당</span>
+        <span class="pay-row-value add" id="sum_jigeji">+0원</span>
+      </div>
+      <div class="pay-row">
+        <span class="pay-row-label">연장수당</span>
+        <span class="pay-row-value add" id="sum_overtime">+0원</span>
+      </div>
+      <div class="pay-row">
+        <span class="pay-row-label">근태 공제 합계</span>
+        <span class="pay-row-value deduct" id="sum_deduct">-0원</span>
+      </div>
+    </div>
+
+    <div class="total-box">
+      <div class="total-label">예상 실수령액 (세전)</div>
+      <div class="total-amount" id="totalAmount">2,156,880</div>
+      <div class="total-note">원 · 세금(4대보험, 소득세) 별도</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title">📅 <span id="modalDateTitle"></span></div>
+    <div class="modal-date" id="modalDateSub"></div>
+
+    <div class="status-grid">
+      <button class="status-btn" data-v="출근" onclick="selectStatus('출근')">✅ 출근</button>
+      <button class="status-btn" data-v="연차" onclick="selectStatus('연차')">🌴 연차</button>
+      <button class="status-btn" data-v="반차" onclick="selectStatus('반차')">🌓 반차</button>
+      <button class="status-btn" data-v="조퇴" onclick="selectStatus('조퇴')">🚶 조퇴</button>
+      <button class="status-btn" data-v="결근" onclick="selectStatus('결근')">❌ 결근</button>
+      <button class="status-btn" data-v="휴일" onclick="selectStatus('휴일')">😴 휴일</button>
+    </div>
+
+    <div id="timeFields">
+      <div class="time-section">
+        <div class="time-label">🕐 출근 시간</div>
+        <select class="time-select" id="startTimeSelect"></select>
+      </div>
+      <div class="time-section">
+        <div class="time-label">🕕 퇴근 시간</div>
+        <select class="time-select" id="endTimeSelect" onchange="updateOvertimeInfo()"></select>
+      </div>
+      <div class="overtime-info" id="overtimeInfo"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveDay()">저장</button>
+      <button class="btn-delete" onclick="deleteDay()">삭제</button>
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+const HOURLY = 11516.17;
+const BASE_PAY = 2156880;
+const ALLOWANCES = { jajae: 200000, jigeji: 600000 };
+let allowanceOn = { jajae: false, jigeji: false };
+
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+let attendance = JSON.parse(localStorage.getItem('attendance') || '{}');
+let selectedDate = null;
+let selectedStatus = '';
+
+// ─── PAGE TOGGLE ─────────────────────────────────────────────
+function togglePage() {
+  const cal = document.getElementById('calPage');
+  const pay = document.getElementById('payPage');
+  const btn = document.getElementById('toggleBtn');
+  if (cal.classList.contains('active')) {
+    cal.classList.remove('active');
+    pay.classList.add('active');
+    btn.textContent = '📅 출근부';
+    syncAttendanceToPayroll();
+  } else {
+    pay.classList.remove('active');
+    cal.classList.add('active');
+    btn.textContent = '💰 급여계산기';
+  }
+}
+
+// ─── CALENDAR ────────────────────────────────────────────────
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+
+const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const DAYS_KO = ['일','월','화','수','목','금','토'];
+
+function renderCalendar() {
+  document.getElementById('monthTitle').textContent = `${currentYear}년 ${MONTHS[currentMonth]}`;
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  const today = new Date();
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  // empty cells
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const rec = attendance[key];
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    if (d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+      el.classList.add('today');
+    }
+
+    let inner = `<div class="day-num">${d}</div>`;
+    if (rec) {
+      if (rec.status && rec.status !== '휴일') {
+        inner += `<div class="day-badge badge-${rec.status}">${rec.status}</div>`;
+      }
+      if (rec.status === '출근' || rec.status === '조퇴') {
+        inner += `<div class="day-time">${rec.start || ''} → ${rec.end || ''}</div>`;
+        if (rec.overtimeHours > 0) {
+          inner += `<div class="day-overtime">+${rec.overtimeHours.toFixed(1)}h</div>`;
+        }
+      }
+    }
+    el.innerHTML = inner;
+    el.addEventListener('click', () => openModal(key, d));
+    grid.appendChild(el);
+  }
+
+  renderSummary();
+}
+
+function renderSummary() {
+  const prefix = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-`;
+  let counts = { 출근:0, 연차:0, 반차:0, 조퇴:0, 결근:0, overtime:0 };
+  for (const [k,v] of Object.entries(attendance)) {
+    if (!k.startsWith(prefix)) continue;
+    if (v.status === '출근') counts.출근++;
+    else if (v.status === '연차') counts.연차++;
+    else if (v.status === '반차') counts.반차++;
+    else if (v.status === '조퇴') counts.조퇴++;
+    else if (v.status === '결근') counts.결근++;
+    if (v.overtimeHours) counts.overtime += v.overtimeHours;
+  }
+
+  const colors = { 출근: 'var(--green)', 연차: 'var(--purple)', 반차: 'var(--blue)', 조퇴: 'var(--yellow)', 결근: 'var(--red)' };
+  let html = '';
+  for (const [k,c] of Object.entries(colors)) {
+    html += `<div class="summary-card">
+      <div class="s-num" style="color:${c}">${counts[k]}</div>
+      <div class="s-label">${k}</div>
+    </div>`;
+  }
+  html += `<div class="summary-card">
+    <div class="s-num" style="color:var(--accent)">${counts.overtime.toFixed(1)}</div>
+    <div class="s-label">연장h</div>
+  </div>`;
+  document.getElementById('summaryStrip').innerHTML = html;
+}
+
+// ─── MODAL ───────────────────────────────────────────────────
+function openModal(key, d) {
+  selectedDate = key;
+  const parts = key.split('-');
+  const dow = new Date(+parts[0], +parts[1]-1, +parts[2]).getDay();
+  document.getElementById('modalDateTitle').textContent = `${MONTHS[+parts[1]-1]} ${d}일 (${DAYS_KO[dow]})`;
+  document.getElementById('modalDateSub').textContent = key;
+
+  buildStartTimes();
+  buildEndTimes();
+
+  const rec = attendance[key] || {};
+  selectedStatus = rec.status || '';
+  document.querySelectorAll('.status-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.v === selectedStatus);
+  });
+
+  if (rec.start) document.getElementById('startTimeSelect').value = rec.start;
+  if (rec.end) document.getElementById('endTimeSelect').value = rec.end;
+
+  updateTimeFieldsVisibility();
+  updateOvertimeInfo();
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function selectStatus(v) {
+  selectedStatus = v;
+  document.querySelectorAll('.status-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.v === v);
+  });
+  updateTimeFieldsVisibility();
+  updateOvertimeInfo();
+}
+
+function updateTimeFieldsVisibility() {
+  const show = ['출근','조퇴'].includes(selectedStatus);
+  document.getElementById('timeFields').style.display = show ? 'block' : 'none';
+}
+
+function buildStartTimes() {
+  const sel = document.getElementById('startTimeSelect');
+  sel.innerHTML = '';
+  for (let h = 8; h <= 15; h++) {
+    for (let m = 0; m < 60; m += 10) {
+      if (h === 15 && m > 0) break;
+      const val = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = val;
+      sel.appendChild(opt);
+    }
+  }
+  sel.value = '08:00';
+}
+
+function buildEndTimes() {
+  const sel = document.getElementById('endTimeSelect');
+  sel.innerHTML = '';
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 10) {
+      const val = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = val;
+      sel.appendChild(opt);
+    }
+  }
+  sel.value = '18:00';
+}
+
+function updateOvertimeInfo() {
+  const start = document.getElementById('startTimeSelect').value;
+  const end = document.getElementById('endTimeSelect').value;
+  const info = document.getElementById('overtimeInfo');
+
+  const [sh,sm] = start.split(':').map(Number);
+  let [eh,em] = end.split(':').map(Number);
+  if (eh < sh) eh += 24; // next day
+  const totalMin = (eh*60+em) - (sh*60+sm);
+  const workHours = Math.max(0, totalMin/60);
+  const baseHours = 8;
+  const overtime = Math.max(0, workHours - baseHours);
+
+  if (overtime > 0) {
+    const pay = Math.round(HOURLY * 1.5 * overtime);
+    info.innerHTML = `⏰ 연장근로: <strong>${overtime.toFixed(1)}시간</strong> — 예상 연장수당: <strong>+${pay.toLocaleString()}원</strong>`;
+    info.style.display = 'block';
+  } else if (workHours < baseHours && workHours > 0 && selectedStatus === '조퇴') {
+    const shortHours = baseHours - workHours;
+    const deduct = Math.round(HOURLY * shortHours);
+    info.innerHTML = `🚶 조퇴 공제: <strong>${shortHours.toFixed(1)}시간</strong> — 예상 공제: <strong>-${deduct.toLocaleString()}원</strong>`;
+    info.style.backgroundColor = 'rgba(248,81,73,0.1)';
+    info.style.borderColor = 'rgba(248,81,73,0.3)';
+    info.style.color = 'var(--red)';
+    info.style.display = 'block';
+  } else {
+    info.style.display = 'none';
+  }
+}
+
+function calcOvertimeFromTimes(start, end) {
+  if (!start || !end) return 0;
+  const [sh,sm] = start.split(':').map(Number);
+  let [eh,em] = end.split(':').map(Number);
+  if (eh < sh) eh += 24;
+  const totalMin = (eh*60+em) - (sh*60+sm);
+  const workHours = Math.max(0, totalMin/60);
+  return Math.max(0, workHours - 8);
+}
+
+function calcShortHoursFromTimes(start, end) {
+  if (!start || !end) return 0;
+  const [sh,sm] = start.split(':').map(Number);
+  let [eh,em] = end.split(':').map(Number);
+  if (eh < sh) eh += 24;
+  const totalMin = (eh*60+em) - (sh*60+sm);
+  const workHours = Math.max(0, totalMin/60);
+  return Math.max(0, 8 - workHours);
+}
+
+function saveDay() {
+  if (!selectedDate) return;
+  const start = document.getElementById('startTimeSelect').value;
+  const end = document.getElementById('endTimeSelect').value;
+  const overtimeHours = calcOvertimeFromTimes(start, end);
+  const shortHours = selectedStatus === '조퇴' ? calcShortHoursFromTimes(start, end) : 0;
+
+  attendance[selectedDate] = {
+    status: selectedStatus,
+    start: ['출근','조퇴'].includes(selectedStatus) ? start : null,
+    end: ['출근','조퇴'].includes(selectedStatus) ? end : null,
+    overtimeHours: selectedStatus === '출근' ? overtimeHours : 0,
+    shortHours: shortHours
+  };
+
+  localStorage.setItem('attendance', JSON.stringify(attendance));
+  closeModal();
+  renderCalendar();
+}
+
+function deleteDay() {
+  if (!selectedDate) return;
+  delete attendance[selectedDate];
+  localStorage.setItem('attendance', JSON.stringify(attendance));
+  closeModal();
+  renderCalendar();
+}
+
+// ─── PAYROLL ─────────────────────────────────────────────────
+function toggleAllowance(key) {
+  allowanceOn[key] = !allowanceOn[key];
+  const btn = document.getElementById(`toggle_${key}`);
+  const val = document.getElementById(`val_${key}`);
+  const sum = document.getElementById(`sum_${key}`);
+  if (allowanceOn[key]) {
+    btn.textContent = 'ON';
+    btn.classList.add('on');
+    val.style.color = 'var(--green)';
+    val.textContent = `+${ALLOWANCES[key].toLocaleString()}원`;
+    sum.textContent = `+${ALLOWANCES[key].toLocaleString()}원`;
+    sum.style.color = 'var(--green)';
+  } else {
+    btn.textContent = 'OFF';
+    btn.classList.remove('on');
+    val.style.color = 'var(--text2)';
+    val.textContent = '+0원';
+    sum.textContent = '+0원';
+  }
+  calcPayroll();
+}
+
+function syncAttendanceToPayroll() {
+  const prefix = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-`;
+  let annualDays = 0, halfDays = 0, absentDays = 0, earlyHours = 0, overtimeH = 0;
+
+  for (const [k,v] of Object.entries(attendance)) {
+    if (!k.startsWith(prefix)) continue;
+    if (v.status === '연차') annualDays++;
+    else if (v.status === '반차') halfDays++;
+    else if (v.status === '결근') absentDays++;
+    else if (v.status === '조퇴') earlyHours += (v.shortHours || 0);
+    if (v.overtimeHours) overtimeH += v.overtimeHours;
+  }
+
+  document.getElementById('annualLeave').value = annualDays;
+  document.getElementById('halfLeave').value = halfDays;
+  document.getElementById('absentDays').value = absentDays;
+  document.getElementById('earlyHours').value = earlyHours.toFixed(1);
+  document.getElementById('overtimeHours').value = overtimeH.toFixed(1);
+
+  const infoEl = document.getElementById('payAttendanceInfo');
+  infoEl.textContent = `📅 ${currentYear}년 ${MONTHS[currentMonth]} 달력 데이터 자동 반영됨`;
+
+  calcPayroll();
+}
+
+function calcPayroll() {
+  const overtimeH = parseFloat(document.getElementById('overtimeHours').value) || 0;
+  const annual = parseFloat(document.getElementById('annualLeave').value) || 0;
+  const half = parseFloat(document.getElementById('halfLeave').value) || 0;
+  const absent = parseFloat(document.getElementById('absentDays').value) || 0;
+  const earlyH = parseFloat(document.getElementById('earlyHours').value) || 0;
+
+  const overtimePay = Math.round(HOURLY * 1.5 * overtimeH);
+  const annualDeduct = Math.round(HOURLY * 8 * annual);
+  const halfDeduct = Math.round(HOURLY * 4 * half);
+  const absentDeduct = Math.round(HOURLY * 8 * absent);
+  const earlyDeduct = Math.round(HOURLY * earlyH);
+  const totalDeduct = annualDeduct + halfDeduct + absentDeduct + earlyDeduct;
+
+  const jajae = allowanceOn.jajae ? ALLOWANCES.jajae : 0;
+  const jigeji = allowanceOn.jigeji ? ALLOWANCES.jigeji : 0;
+
+  const total = BASE_PAY + jajae + jigeji + overtimePay - totalDeduct;
+
+  document.getElementById('overtimePay').textContent = `+${overtimePay.toLocaleString()}원`;
+  document.getElementById('annualDeduct').textContent = `-${annualDeduct.toLocaleString()}원`;
+  document.getElementById('halfDeduct').textContent = `-${halfDeduct.toLocaleString()}원`;
+  document.getElementById('absentDeduct').textContent = `-${absentDeduct.toLocaleString()}원`;
+  document.getElementById('earlyDeduct').textContent = `-${earlyDeduct.toLocaleString()}원`;
+  document.getElementById('sum_overtime').textContent = `+${overtimePay.toLocaleString()}원`;
+  document.getElementById('sum_deduct').textContent = `-${totalDeduct.toLocaleString()}원`;
+  document.getElementById('totalAmount').textContent = Math.max(0, total).toLocaleString();
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+renderCalendar();
+calcPayroll();
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
